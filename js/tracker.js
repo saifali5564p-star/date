@@ -4,17 +4,16 @@
  *           Time-on-page, Bot/Human Detection, Demographics
  * Stores data in localStorage and sends to analytics dashboard
  */
-
-(function () {
-  "use strict";
-
-  const ZONE_ID = document.querySelector("script[src*='galaksion']")
-    ? new URL(document.querySelector("script[src*='galaksion']").src).searchParams.get("zone") || "ZONE_ID_HERE"
-    : "ZONE_ID_HERE";
-
-  const SESSION_KEY = "hw_session_" + ZONE_ID;
-  const LOG_KEY = "hw_visit_log";
-  const pageStart = Date.now();
+// Auto-capture Zone ID from URL parameter (e.g. ?zone=123456 or ?zoneid=123456)
+function getZoneId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("zone") ||
+         params.get("zoneid") ||
+         params.get("zone_id") ||
+         params.get("zid") ||
+         "DIRECT"; // fallback if no param
+}
+const ZONE_ID = getZoneId();
 
   /* ─── 1. BOT DETECTION ─────────────────────────────────── */
   function detectBot() {
