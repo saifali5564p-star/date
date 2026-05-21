@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ad Analytics Dashboard — HealthWise Daily</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0D1117;
+      --surface:   #161B22;
+      --surface2:  #1C2333;
+      --border:    #30363D;
+      --text:      #E6EDF3;
+      --text-soft: #8B949E;
+      --green:     #3FB950;
+      --red:       #F85149;
+      --yellow:    #D29922;
+      --blue:      #58A6FF;
+      --purple:    #BC8CFF;
+      --orange:    #FFA657;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Inter', system-ui, sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+
+    /* TOP BAR */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; background: var(--surface);
+      border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 1rem; }
+    .logo { font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .logo span { color: var(--blue); }
+    .badge {
+      padding: 0.25rem 0.6rem; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 600; font-family: var(--mono);
+    }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+    .badge-red   { background: rgba(248,81,73,0.15);  color: var(--red); }
+    .badge-blue  { background: rgba(88,166,255,0.15); color: var(--blue); }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .btn {
+      padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); cursor: pointer;
+      font-family: var(--sans); font-size: 0.85rem; transition: border-color 0.2s;
+    }
+    .btn:hover { border-color: var(--blue); }
+    .btn-red { border-color: var(--red); color: var(--red); }
+    .btn-red:hover { background: rgba(248,81,73,0.1); }
+    #live-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      animation: pulse 1.5s infinite; display: inline-block;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:0.3; }
+    }
+
+    /* LAYOUT */
+    .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+    /* ZONE ID PANEL */
+    .zone-panel {
+      background: linear-gradient(135deg, rgba(88,166,255,0.1) 0%, rgba(188,140,255,0.05) 100%);
+      border: 1px solid rgba(88,166,255,0.3); border-radius: 10px;
+      padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 2rem;
+      flex-wrap: wrap;
+    }
+    .zone-panel h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue); margin-bottom: 0.5rem; }
+    .zone-id-display {
+      font-family: var(--mono); font-size: 1.5rem; font-weight: 600;
+      color: var(--text); letter-spacing: 0.05em;
+    }
+    .zone-meta { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .zone-meta-item { display: flex; flex-direction: column; gap: 0.25rem; }
+    .zone-meta-item label { font-size: 0.75rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; }
+    .zone-meta-item span { font-family: var(--mono); font-size: 0.9rem; color: var(--text); }
+    .copy-btn {
+      background: rgba(88,166,255,0.15); border: 1px solid rgba(88,166,255,0.3);
+      color: var(--blue); padding: 0.4rem 0.85rem; border-radius: 5px;
+      cursor: pointer; font-size: 0.8rem; font-family: var(--sans);
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: rgba(88,166,255,0.25); }
+
+    /* GALAKSION QUICK LINKS */
+    .quick-links {
+      display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+    }
+    .ql-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.85rem 1.25rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      text-decoration: none; color: var(--text);
+      transition: border-color 0.2s; flex: 1; min-width: 200px;
+    }
+    .ql-card:hover { border-color: var(--blue); }
+    .ql-icon { font-size: 1.4rem; }
+    .ql-text strong { display: block; font-size: 0.9rem; }
+    .ql-text span { font-size: 0.75rem; color: var(--text-soft); }
+
+    /* STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1.25rem 1.5rem;
+    }
+    .stat-label { font-size: 0.75rem; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .stat-value { font-family: var(--mono); font-size: 1.8rem; font-weight: 600; }
+    .stat-sub { font-size: 0.75rem; color: var(--text-soft); margin-top: 0.25rem; }
+    .val-green { color: var(--green); }
+    .val-red   { color: var(--red); }
+    .val-blue  { color: var(--blue); }
+    .val-yellow{ color: var(--yellow); }
+    .val-white { color: var(--text); }
+
+    /* MAIN GRID */
+    .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; margin-bottom: 1.5rem; }
+
+    /* VISIT TABLE */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+      font-weight: 600; font-size: 0.9rem;
+    }
+    .panel-header .right { display: flex; gap: 0.5rem; align-items: center; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      padding: 0.6rem 1rem; text-align: left;
+      color: var(--text-soft); font-weight: 500; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+      background: var(--surface2);
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody td {
+      padding: 0.65rem 1rem; white-space: nowrap;
+      font-family: var(--mono); font-size: 0.78rem;
+    }
+    .td-normal { font-family: var(--sans); }
+    .flag { font-size: 1rem; }
+
+    /* RIGHT SIDEBAR */
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* BOT/HUMAN METER */
+    .bot-meter { padding: 1.5rem; }
+    .meter-row { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
+    .meter-label { font-size: 0.8rem; color: var(--text-soft); }
+    .bar-wrap { background: var(--border); border-radius: 4px; height: 8px; margin-bottom: 0.5rem; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+    /* GEO + ISP */
+    .info-list { padding: 0 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row .key { font-size: 0.78rem; color: var(--text-soft); }
+    .info-row .val { font-family: var(--mono); font-size: 0.8rem; color: var(--text); text-align: right; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+    /* BOT SIGNALS */
+    .signals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 0 1.5rem 1.5rem; }
+    .signal-chip {
+      display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.6rem;
+      background: var(--surface2); border-radius: 5px; font-size: 0.75rem;
+    }
+    .sig-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    /* BOTTOM ROW */
+    .bottom-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      padding: 3rem; text-align: center; color: var(--text-soft);
+    }
+    .empty-state .emoji { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { line-height: 1.7; font-size: 0.9rem; }
+
+    /* HOW-TO GUIDE */
+    .guide { padding: 1.5rem; }
+    .guide h3 { font-size: 0.9rem; margin-bottom: 1rem; color: var(--blue); }
+    .step {
+      display: flex; gap: 0.75rem; margin-bottom: 0.85rem; align-items: flex-start;
+    }
+    .step-num {
+      background: var(--blue); color: #000; width: 20px; height: 20px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+    }
+    .step-text { font-size: 0.82rem; line-height: 1.6; color: var(--text-soft); }
+    .step-text strong { color: var(--text); }
+    .code-inline {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--orange); padding: 0.1rem 0.4rem; border-radius: 3px;
+      font-family: var(--mono); font-size: 0.78rem;
+    }
+
+    #last-update { font-size: 0.75rem; color: var(--text-soft); }
+
+    .niche-pill {
+      padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.7rem;
+      font-weight: 600; background: rgba(255,166,87,0.15); color: var(--orange);
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<nav class="topbar">
+  <div class="topbar-left">
+    <div class="logo">HealthWise<span>Daily</span> <span style="color:var(--text-soft);font-weight:400;">/ Analytics</span></div>
+    <span id="live-dot"></span>
+    <span id="last-update">Loading…</span>
+  </div>
+  <div class="topbar-right">
+    <span class="niche-pill">🇺🇸 USA • Desktop • 40+ • Health/Finance</span>
+    <button class="btn" onclick="refreshDashboard()">⟳ Refresh</button>
+    <button class="btn btn-red" onclick="clearAllData()">🗑 Clear Logs</button>
+    <a href="index.html" class="btn">← Back to Site</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- ZONE ID PANEL -->
+  <div class="zone-panel">
+    <div>
+      <h2>Active Zone ID</h2>
+      <div class="zone-id-display" id="zone-id-display">ZONE_ID_HERE</div>
+      <div style="margin-top:0.5rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <span class="badge badge-blue">Galaksion Pop-Under</span>
+        <span class="badge badge-green" id="zone-status">● Active</span>
+      </div>
+    </div>
+    <div class="zone-meta">
+      <div class="zone-meta-item">
+        <label>Network</label>
+        <span>Galaksion</span>
+      </div>
+      <div class="zone-meta-item">
+        <label>Ad Type</label>
+        <span>Pop-Under</span>
+      </div>
+      <div class="zone-meta-item">
+        <label>Target</label>
+        <span>USA Desktop 40+</span>
+      </div>
+      <div class="zone-meta-item">
+        <label>Niche</label>
+        <span>Health / Finance</span>
+      </div>
+      <div class="zone-meta-item">
+        <label>Site URL</label>
+        <span id="site-url-display">—</span>
+      </div>
+    </div>
+    <button class="copy-btn" onclick="copyZoneId()">📋 Copy Zone ID</button>
+  </div>
+
+  <!-- GALAKSION QUICK LINKS -->
+  <div class="quick-links">
+    <a class="ql-card" href="https://galaksion.com/publisher/zones" target="_blank">
+      <span class="ql-icon">🗂</span>
+      <div class="ql-text"><strong>Zone Manager</strong><span>View all zones & Zone IDs</span></div>
+    </a>
+    <a class="ql-card" href="https://galaksion.com/publisher/statistics" target="_blank">
+      <span class="ql-icon">📊</span>
+      <div class="ql-text"><strong>Galaksion Stats</strong><span>Impressions, CPM, Revenue</span></div>
+    </a>
+    <a class="ql-card" href="https://galaksion.com/publisher/payments" target="_blank">
+      <span class="ql-icon">💵</span>
+      <div class="ql-text"><strong>Payments</strong><span>Balance & withdrawal history</span></div>
+    </a>
+    <a class="ql-card" href="https://galaksion.com/publisher/sites" target="_blank">
+      <span class="ql-icon">🌐</span>
+      <div class="ql-text"><strong>Sites / Zones Setup</strong><span>Add site, generate tag, find Zone ID</span></div>
+    </a>
+    <a class="ql-card" href="https://galaksion.com/publisher/profile" target="_blank">
+      <span class="ql-icon">👤</span>
+      <div class="ql-text"><strong>Publisher Profile</strong><span>Account settings & API keys</span></div>
+    </a>
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Visits</div>
+      <div class="stat-value val-white" id="stat-total">0</div>
+      <div class="stat-sub">All sessions logged</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Human Visits</div>
+      <div class="stat-value val-green" id="stat-human">0</div>
+      <div class="stat-sub">Bot score &lt; 8</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Bot / Suspicious</div>
+      <div class="stat-value val-red" id="stat-bots">0</div>
+      <div class="stat-sub">Bot score ≥ 8</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Time on Page</div>
+      <div class="stat-value val-blue" id="stat-avg-time">0s</div>
+      <div class="stat-sub">Active seconds avg</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">USA Traffic %</div>
+      <div class="stat-value val-yellow" id="stat-usa">0%</div>
+      <div class="stat-sub">Target geo match</div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- VISIT LOG TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        📋 Visit Log
+        <div class="right">
+          <span class="badge badge-blue" id="visit-count-badge">0 visits</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Time</th>
+              <th>Zone ID</th>
+              <th>IP</th>
+              <th>Country</th>
+              <th>City / Region</th>
+              <th>ISP / ASN</th>
+              <th>Browser</th>
+              <th>Device</th>
+              <th>OS</th>
+              <th>Active Time</th>
+              <th>Clicks</th>
+              <th>Bot?</th>
+              <th>Bot Score</th>
+            </tr>
+          </thead>
+          <tbody id="visit-table-body">
+            <tr>
+              <td colspan="14">
+                <div class="empty-state">
+                  <div class="emoji">🕵️</div>
+                  <p>No visits logged yet.<br/>Open <strong>index.html</strong> in a browser to start tracking.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- LATEST VISITOR GEO -->
+      <div class="panel">
+        <div class="panel-header">📍 Latest Visitor — Geo & Network</div>
+        <div class="info-list" id="geo-info">
+          <div class="empty-state"><div class="emoji">🌍</div><p>Waiting for first visit…</p></div>
+        </div>
+      </div>
+
+      <!-- BOT DETECTION METER -->
+      <div class="panel">
+        <div class="panel-header">🤖 Bot Detection — Latest Visit</div>
+        <div class="bot-meter">
+          <div class="meter-row">
+            <span class="meter-label">Human confidence</span>
+            <span id="human-pct" style="font-family:var(--mono);font-size:0.85rem;color:var(--green)">—</span>
+          </div>
+          <div class="bar-wrap"><div class="bar-fill" id="human-bar" style="width:0%;background:var(--green)"></div></div>
+
+          <div class="meter-row" style="margin-top:0.75rem;">
+            <span class="meter-label">Bot risk score</span>
+            <span id="bot-score-display" style="font-family:var(--mono);font-size:0.85rem;color:var(--red)">—</span>
+          </div>
+          <div class="bar-wrap"><div class="bar-fill" id="bot-bar" style="width:0%;background:var(--red)"></div></div>
+        </div>
+        <div class="signals-grid" id="bot-signals"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM ROW -->
+  <div class="bottom-row">
+
+    <!-- HOW TO FIND ZONE ID -->
+    <div class="panel">
+      <div class="panel-header">🔑 Where to Find Your Zone ID</div>
+      <div class="guide">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Log in to <strong>galaksion.com</strong> → go to <strong>Publisher → Sites & Zones</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Click <strong>Add Site</strong> → enter your domain → choose <strong>Pop-Under</strong> as ad type</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">After approval, open the zone. Your <strong>Zone ID</strong> appears at the top (e.g. <code class="code-inline">123456</code>) and inside the generated script tag as <code class="code-inline">?zone=123456</code></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Open <code class="code-inline">index.html</code> and replace <code class="code-inline">ZONE_ID_HERE</code> on line 20 with your actual Zone ID</div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-text">Deploy the site → come back to this dashboard to see <strong>impressions, revenue, and visitor data</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW TO UPLOAD TO GITHUB -->
+    <div class="panel">
+      <div class="panel-header">🚀 Upload to GitHub Pages (Free Hosting)</div>
+      <div class="guide">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Create a free account at <strong>github.com</strong> → click <strong>New Repository</strong></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Name it anything (e.g. <code class="code-inline">healthwise-site</code>) → set it <strong>Public</strong> → click Create</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Drag and drop all site files (<code class="code-inline">index.html</code>, <code class="code-inline">css/</code>, <code class="code-inline">js/</code>) into the repo using the browser uploader</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Go to <strong>Settings → Pages</strong> → Source: <strong>Deploy from branch → main → / (root)</strong> → Save</div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-text">Your site is live at <code class="code-inline">https://yourusername.github.io/healthwise-site/</code> within ~2 minutes</div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-text">Add this URL to Galaksion as your site URL to complete verification</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NICHE GUIDE -->
+    <div class="panel">
+      <div class="panel-header">🎯 Best Niches — USA Desktop 40+ Traffic</div>
+      <div class="guide">
+        <h3>Highest CPM niches for your audience:</h3>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text"><strong>Health & Supplements</strong> — cholesterol, blood pressure, joint pain, weight loss. CPM: <span style="color:var(--green)">$3–8</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text"><strong>Medicare / Insurance</strong> — Medicare Advantage, Medigap, life insurance. CPM: <span style="color:var(--green)">$5–12</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text"><strong>Retirement / Finance</strong> — Social Security, 401k, annuities. CPM: <span style="color:var(--green)">$4–10</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text"><strong>Online Sweepstakes / Surveys</strong> — broad appeal, high volume. CPM: <span style="color:var(--yellow)">$2–5</span></div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-text"><strong>Home Services</strong> — solar, walk-in tubs, stairlifts. CPM: <span style="color:var(--green)">$4–9</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /container -->
+
+<script src="js/tracker.js"></script>
+<script>
+/* ─── DASHBOARD LOGIC ─────────────────────────────── */
+
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString("en-US", { hour12: false, hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
+
+function countryFlag(code) {
+  if (!code || code.length !== 2) return "🌐";
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
+}
+
+function renderRow(v, i) {
+  const b = v.bot || {};
+  const g = v.geo || {};
+  const br = v.browser || {};
+  const t = v.time || {};
+  const botClass = b.isBot ? "val-red" : "val-green";
+  const botText  = b.isBot ? "🤖 BOT" : "✅ Human";
+  return `<tr>
+    <td>${i + 1}</td>
+    <td>${formatTime(v.timestamp)}</td>
+    <td style="color:var(--blue)">${v.zoneId || "—"}</td>
+    <td>${g.ip || "—"}</td>
+    <td><span class="flag">${countryFlag(g.countryCode)}</span> ${g.country || "—"}</td>
+    <td class="td-normal">${g.city || "—"}, ${g.region || "—"}</td>
+    <td class="td-normal" style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${g.isp || "—"}</td>
+    <td class="td-normal">${br.browser || "—"} ${br.version || ""}</td>
+    <td class="td-normal">${br.device || "—"}</td>
+    <td class="td-normal">${br.os || "—"}</td>
+    <td>${t.activeSeconds || 0}s <span style="color:var(--text-soft)">(${t.engagementPct || 0}%)</span></td>
+    <td>${(v.clicks && v.clicks.total) || 0}</td>
+    <td class="${botClass}">${botText}</td>
+    <td style="color:${b.score >= 8 ? 'var(--red)' : 'var(--green)'}">${b.score || 0}/10</td>
+  </tr>`;
+}
+
+function renderGeoInfo(v) {
+  const g = v.geo || {};
+  const br = v.browser || {};
+  const d = v.demographics || {};
+  const rows = [
+    ["IP Address",   g.ip],
+    ["City",         g.city],
+    ["Region/State", g.region],
+    ["Country",      `${countryFlag(g.countryCode)} ${g.country}`],
+    ["Postal Code",  g.postal],
+    ["ISP / Org",    g.isp],
+    ["ASN",          g.asn],
+    ["Coordinates",  g.lat ? `${g.lat}, ${g.lon}` : "—"],
+    ["Timezone",     g.timezone],
+    ["Browser",      `${br.browser} ${br.version}`],
+    ["OS",           br.os],
+    ["Device",       br.device],
+    ["Screen",       `${br.screenW}×${br.screenH}`],
+    ["Language",     br.language],
+    ["Target Match", d.targetMatch ? "✅ Yes (USA+Desktop)" : "❌ No"],
+    ["Niche Fit",    d.nicheRelevance],
+    ["Demographics", d.targetAgeNote],
+  ];
+  return rows.map(([k, val]) => `
+    <div class="info-row">
+      <span class="key">${k}</span>
+      <span class="val">${val || "—"}</span>
+    </div>`).join("");
+}
+
+function renderBotSignals(v) {
+  const s = (v.bot && v.bot.signals) || {};
+  const signals = [
+    ["UA Bot Pattern",   s.isUABot],
+    ["WebDriver",        s.webdriver],
+    ["Headless Chrome",  s.chromeHeadless],
+    ["No Plugins",       s.noPlugins],
+    ["No WebGL",         s.noWebGL],
+    ["No Languages",     s.noLanguages],
+  ];
+  return signals.map(([label, bad]) => `
+    <div class="signal-chip">
+      <div class="sig-dot" style="background:${bad ? 'var(--red)' : 'var(--green)'}"></div>
+      <span style="color:${bad ? 'var(--red)' : 'var(--text-soft)'}">${label}</span>
+    </div>`).join("");
+}
+
+function refreshDashboard() {
+  const logs = window.HWTracker ? window.HWTracker.getLogs() : JSON.parse(localStorage.getItem("hw_visit_log") || "[]");
+
+  // Stats
+  const total  = logs.length;
+  const humans = logs.filter(v => v.bot && !v.bot.isBot).length;
+  const bots   = total - humans;
+  const avgTime = total ? Math.round(logs.reduce((a, v) => a + ((v.time && v.time.activeSeconds) || 0), 0) / total) : 0;
+  const usaPct = total ? Math.round((logs.filter(v => v.geo && v.geo.countryCode === "US").length / total) * 100) : 0;
+
+  document.getElementById("stat-total").textContent  = total;
+  document.getElementById("stat-human").textContent  = humans;
+  document.getElementById("stat-bots").textContent   = bots;
+  document.getElementById("stat-avg-time").textContent = avgTime + "s";
+  document.getElementById("stat-usa").textContent    = usaPct + "%";
+  document.getElementById("visit-count-badge").textContent = total + " visits";
+  document.getElementById("last-update").textContent = "Updated " + new Date().toLocaleTimeString();
+
+  // Extract zone id from first log or from tracker script
+  const zoneId = (logs[0] && logs[0].zoneId) ||
+    (() => { try { return new URL(document.querySelector("script[src*='galaksion']")?.src||"").searchParams.get("zone"); } catch { return null; } })() ||
+    "ZONE_ID_HERE";
+  document.getElementById("zone-id-display").textContent = zoneId;
+  document.getElementById("site-url-display").textContent = location.origin;
+
+  // Visit table
+  const tbody = document.getElementById("visit-table-body");
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><div class="emoji">🕵️</div><p>No visits logged yet.<br/>Open <strong>index.html</strong> in a browser to start tracking.</p></div></td></tr>`;
+  } else {
+    tbody.innerHTML = logs.slice(0, 50).map((v, i) => renderRow(v, i)).join("");
+  }
+
+  // Geo sidebar
+  if (logs.length > 0) {
+    const v = logs[0];
+    document.getElementById("geo-info").innerHTML = renderGeoInfo(v);
+
+    // Bot meter
+    const score = (v.bot && v.bot.score) || 0;
+    const humanPct = Math.max(0, Math.round((1 - score / 10) * 100));
+    document.getElementById("human-pct").textContent = humanPct + "%";
+    document.getElementById("human-bar").style.width = humanPct + "%";
+    document.getElementById("bot-score-display").textContent = score + "/10";
+    document.getElementById("bot-bar").style.width = (score * 10) + "%";
+    document.getElementById("bot-signals").innerHTML = renderBotSignals(v);
+  }
+}
+
+function clearAllData() {
+  if (confirm("Clear all visit logs? This cannot be undone.")) {
+    localStorage.removeItem("hw_visit_log");
+    refreshDashboard();
+  }
+}
+
+function copyZoneId() {
+  const txt = document.getElementById("zone-id-display").textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector(".copy-btn");
+    btn.textContent = "✅ Copied!";
+    setTimeout(() => btn.textContent = "📋 Copy Zone ID", 2000);
+  });
+}
+
+// Listen for live updates from tracker
+document.addEventListener("hw_visit", () => refreshDashboard());
+
+// Auto-refresh every 10 seconds
+setInterval(refreshDashboard, 10000);
+refreshDashboard();
+</script>
+</body>
+</html>
